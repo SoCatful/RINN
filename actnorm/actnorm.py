@@ -32,12 +32,16 @@ class ActNorm(torch.jit.ScriptModule):
         if x.dim() > 2:
             x = x.transpose(1, -1)
         if not self._initialized:
-            self.scale.data = 1 / x.detach().reshape(-1, x.shape[-1]).std(
-                0, unbiased=False
-            )
-            self.bias.data = -self.scale * x.detach().reshape(
-                -1, x.shape[-1]
-            ).mean(0)
+            # 计算均值和标准差，避免batch size为1时的问题
+            flat_x = x.detach().reshape(-1, x.shape[-1])
+            mean_x = flat_x.mean(0)
+            std_x = flat_x.std(0, unbiased=False)
+            
+            # 避免标准差为0的情况
+            std_x = torch.clamp(std_x, min=1e-6)
+            
+            self.scale.data = 1.0 / std_x
+            self.bias.data = -self.scale * mean_x
             self._initialized = torch.tensor(True)
         x = self.scale * x + self.bias
         if x.dim() > 2:
