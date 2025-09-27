@@ -1,3 +1,3 @@
-from .layer import JLLayer
+from .jl import JLLayer
 
 __all__ = ['JLLayer']
