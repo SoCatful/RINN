@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from actnorm.actnorm import ActNorm1d
 from realnvp.realnvp import FlowBlock
-from JL.layer import JLLayer
+from JL.jl import JLLayer
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
