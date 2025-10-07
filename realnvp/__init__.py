@@ -1,3 +1,3 @@
-from .realnvp import AffineCoupling, Permute, FlowBlock
+from .realnvp import AffineCoupling, Shuffle, FlowCell
 
-__all__ = ["AffineCoupling", "Permute", "FlowBlock"]
+__all__ = ["AffineCoupling", "Shuffle", "FlowCell"]
