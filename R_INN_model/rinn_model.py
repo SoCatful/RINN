@@ -1,5 +1,13 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+import sys
+import os
+
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from actnorm.actnorm import ActNorm1d
 from JL.jl import JLLayer
 from realnvp.realnvp import RealNVP
@@ -10,7 +18,8 @@ class RINNBlock(nn.Module):
     R-INN 论文中的基本构建块：按照 ActNorm → RealNVP → JL 层的顺序组合
     实现可逆变换和雅可比行列式计算
     """
-    def __init__(self, input_dim, hidden_dim=64, num_stages=4, num_cycles_per_stage=2):
+    def __init__(self, input_dim, hidden_dim=10, num_stages=4, num_cycles_per_stage=2,
+                 ratio_toZ_after_flowstage=0.3, ratio_x1_x2_inAffine=0.25):
         """
         初始化 RINNBlock
         参数:
@@ -18,6 +27,8 @@ class RINNBlock(nn.Module):
             hidden_dim: RealNVP 中 MLP 的隐藏层维度
             num_stages: RealNVP 中的流阶段数量
             num_cycles_per_stage: 每个流阶段中的内部循环次数
+            ratio_toZ_after_flowstage: 每个流阶段后进入z输出的比例
+            ratio_x1_x2_inAffine: RealNVP中Affine层x1条件部分的比例
         """
         super(RINNBlock, self).__init__()
         
@@ -30,8 +41,8 @@ class RINNBlock(nn.Module):
             hidden_dim=hidden_dim,
             num_stages=num_stages,
             num_cycles_per_stage=num_cycles_per_stage,
-            ratio_toZ_after_flowstage=0.3,  # 30%进入z输出
-            ratio_x1_x2_inAffine=0.25       # 25%为x1条件部分
+            ratio_toZ_after_flowstage=ratio_toZ_after_flowstage,
+            ratio_x1_x2_inAffine=ratio_x1_x2_inAffine
         )
         
         # 3. JL 层：执行线性变换，保持可逆性
@@ -98,7 +109,8 @@ class RINNModel(nn.Module):
     """
     完整的 R-INN 模型：由多个 RINNBlock 顺序连接组成
     """
-    def __init__(self, input_dim, hidden_dim=64, num_blocks=3, num_stages=4, num_cycles_per_stage=2):
+    def __init__(self, input_dim, hidden_dim=64, num_blocks=3, num_stages=4, num_cycles_per_stage=2,
+                 ratio_toZ_after_flowstage=0.3, ratio_x1_x2_inAffine=0.25):
         """
         初始化 RINNModel
         参数:
@@ -107,6 +119,8 @@ class RINNModel(nn.Module):
             num_blocks: RINNBlock 的数量
             num_stages: 每个 RINNBlock 中 RealNVP 的流阶段数量
             num_cycles_per_stage: 每个流阶段中的内部循环次数
+            ratio_toZ_after_flowstage: 每个流阶段后进入z输出的比例
+            ratio_x1_x2_inAffine: RealNVP中Affine层x1条件部分的比例
         """
         super(RINNModel, self).__init__()
         
@@ -116,7 +130,9 @@ class RINNModel(nn.Module):
                 input_dim=input_dim,
                 hidden_dim=hidden_dim,
                 num_stages=num_stages,
-                num_cycles_per_stage=num_cycles_per_stage
+                num_cycles_per_stage=num_cycles_per_stage,
+                ratio_toZ_after_flowstage=ratio_toZ_after_flowstage,
+                ratio_x1_x2_inAffine=ratio_x1_x2_inAffine
             ) for _ in range(num_blocks)
         ])
         
@@ -188,7 +204,9 @@ if __name__ == "__main__":
         hidden_dim=64,
         num_blocks=num_blocks,
         num_stages=4,
-        num_cycles_per_stage=2
+        num_cycles_per_stage=2,
+        ratio_toZ_after_flowstage=0.3,
+        ratio_x1_x2_inAffine=0.25
     )
     
     # 生成随机输入
