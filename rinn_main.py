@@ -52,8 +52,8 @@ print("===== 阶段一：前期准备 =====")
 batch_size = 128  # 增大批次大小以加速训练
 epochs = 200  # 增加训练轮数以充分训练模型
 lr = 1e-4
-w_x = 1.0  # 调整权重系数使其接近
-w_y = 2.0  # 调整权重系数使其接近
+w_x = 0.5  # 调整权重系数使其接近
+w_y = 5.0  # 调整权重系数使其接近
 w_z = 1.0  # 调整权重系数使其接近
 x_dim = 3
 z_dim = 3
@@ -77,7 +77,7 @@ print("\n===== 阶段二：数据生成与预处理 =====")
 # 生成数据集
 print("生成数据集...")
 # 总样本数30000个
-n_samples_total = 30000
+n_samples_total = 4000
 
 # 按照8:2的比例划分训练集和验证集
 train_ratio = 0.8
@@ -133,8 +133,8 @@ model = RINNModel(
     input_dim=model_input_dim,
     hidden_dim=5,
     num_blocks=2,
-    num_stages=2,
-    num_cycles_per_stage=2
+    num_stages=1,
+    num_cycles_per_stage=1
 ).to(device)
 
 print(f"模型已创建，输入输出维度: {model.input_dim}")
@@ -145,7 +145,7 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 # 定义总损失计算逻辑
 def calculate_total_loss(x_real, x_recon, y_real, y_pred, z_real, z_recon):
     # Lx: 比较真实x与重建x的分布差异
-    Lx = mmd_loss(x_real, x_recon)
+    Lx = nmse_loss(x_real, x_recon)
     
     # Ly: 计算真实y与预测y的正向预测误差
     # 注意：这里使用nmse_loss作为论文中提到的nmse_loss_for_ly
@@ -192,7 +192,7 @@ for epoch in range(epochs):
         y_pred = model_output[:, :y_dim]
         
         # 反向映射
-        xz_recon, _ = model.inverse(model_output)
+        xz_recon, _ = model.inverse(batch_y)
         # 拆分重建的x和z
         x_recon = xz_recon[:, :x_dim]
         z_recon = xz_recon[:, x_dim:]
@@ -322,9 +322,7 @@ with torch.no_grad():
         print(f"\n测试样本 {i+1}:")
         print(f"x = {test_x_samples[i]}")
         print(f"x的元素和 = {x_sum:.2f}")
-        print(f"预测的y的第一个元素 = {y_pred[0]:.2f}")
-        print(f"预测的y的最后一个元素 = {y_pred[-1]:.2f}")
-        print(f"y的一致性检查: {np.allclose(y_pred, y_pred[0])}")
+        print(f"预测的y = {y_pred}")
         print(f"y预测与x和的误差: {np.abs(y_pred[0] - x_sum):.6f}")
 
 # 2. 生成3个合理的y作为例子，并展示多解生成能力

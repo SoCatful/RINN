@@ -32,6 +32,8 @@ class AffineCoupling(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Linear(hidden_dim, self.x2_dim),
             nn.Tanh()  # 使用tanh限制scale范围
         )
@@ -42,6 +44,8 @@ class AffineCoupling(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),#尝试使用两层神经网络
             nn.Linear(hidden_dim, self.x2_dim)
         )
     
